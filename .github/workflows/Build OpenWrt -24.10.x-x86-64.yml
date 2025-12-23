@@ -108,7 +108,7 @@ jobs:
         run: |
           profile="${{ github.event.inputs.profile }}"
           include_docker="${{ github.event.inputs.include_docker }}"
-          luci_version="${{ github.event.inputs.luci_version }}"
+          openwrt_version="${{ github.event.inputs.luci_version }}"
           echo "Building for profile: $profile"
           docker run --rm -i \
             --user root \
@@ -123,8 +123,7 @@ jobs:
             -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
             -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
             -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
-          openwrt/imagebuilder:x86-64-openwrt-${luci_version} /bin/bash /home/build/openwrt/build.sh
-          
+          openwrt/imagebuilder:x86-64-openwrt-${openwrt_version} /bin/bash /home/build/openwrt/build.sh         
 
       - name: Create info
         run: |
