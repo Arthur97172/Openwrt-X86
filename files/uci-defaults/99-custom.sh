@@ -1,12 +1,12 @@
 #!/bin/sh
-# iStoreOS 首次运行时
+# Openwrt 首次运行时
 LOGFILE="/tmp/uci-defaults-log.txt"
 echo "Starting 99-custom.sh at $(date)" >>$LOGFILE
 # 设置默认防火墙规则，方便虚拟机首次访问 WebUI
 uci set firewall.@zone[1].input='ACCEPT'
 
 # 设置主机名
-uci set system.@system[0].hostname='iStoreOS'
+uci set system.@system[0].hostname='OpenWrt'
 uci set system.@system[0].timezone='CST-8'
 uci set system.@system[0].zonename='Asia/Shanghai'
 
@@ -83,7 +83,7 @@ uci commit
 
 # 设置作者描述信息
 FILE_PATH="/etc/openwrt_release"
-NEW_DESCRIPTION="iStoreOS VERXXXX"
+NEW_DESCRIPTION="OpenWrt VERXXXX"
 sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "$FILE_PATH"
 
 exit 0
