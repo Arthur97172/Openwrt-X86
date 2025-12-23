@@ -1,4 +1,4 @@
-name: 📦 Build Openwrt_x86-64 24.10.X-t
+name: 📦 Build Openwrt_x86-64 24.10.X
 
 on:
   workflow_dispatch:
