@@ -25,7 +25,7 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-partexp-zh-cn"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-advancedplus"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-advancedplus-zh-cn"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-argon"
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-design"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-design"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-argon-config-zh-cn"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES -luci-app-argon-config"
 
