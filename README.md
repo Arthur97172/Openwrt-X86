@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./files/screenshot/001.svg" style="max-width: 100%; height: auto;" />
+  <img src="./files/screenshot/001.png" style="max-width: 100%; height: auto;" />
 
   <h1>基于ImmortalWrt Imagebuilder X86-64</h1>
 
@@ -18,7 +18,7 @@
   </div>
   
 ## 🤔 项目介绍 [![](https://img.shields.io/badge/-项目介绍-FFFFFF.svg)](#-项目介绍-)
-**目标是提供一个纯净的ImmortalWrt，能自由选择是否集成docker和iStore商店。**
+**目标是提供一个纯净的OpenlWrt，能自由选择是否集成docker和iStore商店。**
 
 > [!TIP]
 > 😂此固件为 **非官方构建，不保证完全无BUG** ，请知悉😂
@@ -32,7 +32,7 @@
 > **"您的每一个⭐️，都是开源土壤里的一缕阳光，让灵感发芽，让创造生长~"**
 
 ## 🎉 Thanks [![](https://img.shields.io/badge/-Thanks-FFFFFF.svg)](#-Thanks-)
-- [immortalwrt](https://github.com/immortalwrt)
+- [Openwrt](https://github.com/Openwrt)
 - [sirpdboy](https://github.com/sirpdboy)
 - [wukongdaily](https://github.com/wukongdaily)
 
