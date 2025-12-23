@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./files/screenshot/banner.svg" style="max-width: 100%; height: auto;" />
+  <img src="./files/screenshot/001.svg" style="max-width: 100%; height: auto;" />
 
   <h1>基于ImmortalWrt Imagebuilder X86-64</h1>
 
