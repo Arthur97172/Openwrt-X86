@@ -34,7 +34,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
+    # 关键：添加写入权限，解决 403 报错
+    permissions:
+      contents: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
