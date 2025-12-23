@@ -112,18 +112,20 @@ jobs:
           echo "Building for profile: $profile"
           docker run --rm -i \
             --user root \
-            -v "${{ github.workspace }}/bin:/home/build/openwrt/bin" \
-            -v "${{ github.workspace }}/files:/home/build/openwrt/files" \
-            -v "${{ github.workspace }}/custom:/home/build/openwrt/files/etc/config" \
-            -v "${{ github.workspace }}/x86-64/openwrt.config:/home/build/openwrt-imagebuilder/.config"
-            -v "${{ github.workspace }}/shell:/home/build/openwrt/shell" \
-            -v "${{ github.workspace }}/x86-64/build_config.sh:/home/build/openwrt/build.sh" \
+            -v "/home/runner/work/Openwrt-X86/Openwrt-X86/bin:/home/build/openwrt/bin" \
+            -v "/home/runner/work/Openwrt-X86/Openwrt-X86/files:/home/build/openwrt/files" \
+            -v "/home/runner/work/Openwrt-X86/Openwrt-X86/custom:/home/build/openwrt/files/etc/config" \
+            -v "/home/runner/work/Openwrt-X86/Openwrt-X86/x86-64/openwrt.config:/home/build/openwrt-imagebuilder/.config" \
+            -v "/home/runner/work/Openwrt-X86/Openwrt-X86/shell:/home/build/openwrt/shell" \
+            -v "/home/runner/work/Openwrt-X86/Openwrt-X86/x86-64/build_config.sh:/home/build/openwrt/build.sh" \
             -e PROFILE=$profile \
             -e INCLUDE_DOCKER=$include_docker \
-            -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
-            -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
-            -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
-          openwrt/imagebuilder:x86-64-openwrt-${openwrt_version} /bin/bash /home/build/openwrt/build.sh         
+            -e ENABLE_PPPOE=no \
+            -e PPPOE_ACCOUNT= \
+            -e PPPOE_PASSWORD= \
+            openwrt/imagebuilder:x86-64-openwrt-${openwrt_version} \
+            /bin/bash /home/build/openwrt/build.sh
+      
 
       - name: Create info
         run: |
