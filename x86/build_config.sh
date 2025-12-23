@@ -126,7 +126,7 @@ PACKAGES="$PACKAGES luci-i18n-dockerman-zh-cn"
 #PACKAGES="$PACKAGES luci-app-argon-config"
 #PACKAGES="$PACKAGES luci-app-filetransfer"
 PACKAGES="$PACKAGES luci-app-ttyd"
-PACKAGES="$PACKAGES luci-app-cifs-mount"
+#PACKAGES="$PACKAGES luci-app-cifs-mount"
 
 # SFTP 支持
 PACKAGES="$PACKAGES openssh-sftp-server"
