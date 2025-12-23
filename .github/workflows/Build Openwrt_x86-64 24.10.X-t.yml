@@ -1,0 +1,135 @@
+name: 📦 Build Openwrt_x86-64 24.10.X-t
+
+on:
+  workflow_dispatch:
+    inputs:
+      luci_version:
+        description: "选择luci版本"
+        required: true
+        default: "24.10.5"
+        type: choice
+        options:
+          - '24.10.0'
+          - '24.10.1'
+          - '24.10.2'
+          - '24.10.3'
+          - '24.10.4' 
+          - '24.10.5'           
+      ipaddr:
+        description: '请输入管理IP'
+        required: true
+        default: '192.168.5.1'
+      include_docker:
+        description: "是否编译 Docker 插件"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+
+env:
+  VERSION: ${{ inputs.luci_version }}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: ⚙️ 设置可执行权限
+      run: | 
+        chmod +x x86/build_config.sh
+        chmod +x shell/*.sh
+
+    - name: ⚙️ 安装依赖
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev zstd curl unzip tree
+
+    - name: ⚙️ 设置IP、网关和版本号
+      run: |
+        CONFIG_PATH="./files/uci-defaults/99-custom.sh"
+        sed -i "s/版本号/${{ env.VERSION }}/g" "$CONFIG_PATH"
+        [ -f "./files/etc/banner" ] && sed -i "s/版本号/${{ env.VERSION }}/g" "./files/etc/banner"
+        sed -i "s/192.168.5.1/${{ inputs.ipaddr }}/g" "$CONFIG_PATH"
+        sed -i "s/VERXXXX/${{ env.VERSION }}/g" "$CONFIG_PATH"
+
+    - name: ⏬ 下载 ImageBuilder
+      run: |
+        BUILD_VER="${{ env.VERSION }}"
+        URL="https://downloads.openwrt.org/releases/${BUILD_VER}/targets/x86/64/openwrt-imagebuilder-${BUILD_VER}-x86-64.Linux-x86_64.tar.zst"
+        curl -Lf -o imagebuilder.tar.zst "$URL"
+        tar --use-compress-program=unzstd -xvf imagebuilder.tar.zst
+        mv openwrt-imagebuilder-* imagebuilder
+
+    - name: ⏬ 复制必备文件
+      run: |
+        cp x86/build_config.sh imagebuilder/
+        cp x86/Makefile imagebuilder/
+        cp x86/repositories.conf imagebuilder/
+        cp shell/prepare-packages.sh imagebuilder/
+        cp shell/custom-packages.sh imagebuilder/
+        mkdir -p imagebuilder/files/etc/uci-defaults
+        cp files/uci-defaults/99-custom.sh imagebuilder/files/etc/uci-defaults/
+
+    - name: ⚙️ 动态获取 Kmod 哈希并更新配置
+      run: |
+        BUILD_VER="${{ env.VERSION }}"
+        BASE_URL="https://downloads.openwrt.org/releases/${BUILD_VER}/targets/x86/64/kmods/"
+        
+        echo "正在从 $BASE_URL 获取最新的内核哈希..."
+        # 抓取包含哈希值的文件夹名称 (例如 6.6.110-1-xxx...)
+        KMOD_DIR=$(curl -sL $BASE_URL | grep -oE "[0-9.-]+-[a-f0-9]{32}" | head -n 1)
+        
+        if [ -n "$KMOD_DIR" ]; then
+          FULL_KMOD_URL="${BASE_URL}${KMOD_DIR}"
+          echo "✅ 成功匹配 kmods 路径: $FULL_KMOD_URL"
+          
+          # 1. 替换版本占位符
+          sed -i "s|VERSION_PLACEHOLDER|${BUILD_VER}|g" imagebuilder/repositories.conf
+          # 2. 替换 Kmod 完整路径
+          sed -i "s|https://.*/kmods/KMOD_PLACEHOLDER|$FULL_KMOD_URL|g" imagebuilder/repositories.conf
+        else
+          echo "❌ 无法获取 Kmod 哈希，请检查官方源是否存在该版本: $BASE_URL"
+          exit 1
+        fi
+        
+        echo "--- 检查更新后的 repositories.conf ---"
+        cat imagebuilder/repositories.conf | grep "https"
+
+    - name: 🧱 构建OpenWrt固件
+      working-directory: ./imagebuilder
+      run: |
+        bash ./build_config.sh
+
+    - name: 🔍 整理固件文件
+      run: |
+        cd imagebuilder/bin/targets/x86/64/
+        for f in *squashfs-combined-efi.img.gz; do
+          if [ -f "$f" ]; then
+            mv "$f" "${{ env.VERSION }}-$f"
+          fi
+        done
+
+    - name: 📜 生成发布说明
+      run: |
+        cat > ${{ github.workspace }}/router-info.md <<EOF
+        ## 📡 路由器后台信息
+        📌 版本： OpenWrt-x86-64-${{ env.VERSION }}
+        🌐 初始IP： ${{ inputs.ipaddr }}
+        📜 **Docker 状态**: ${{ inputs.include_docker == 'yes' && '已集成' || '未集成' }}
+        EOF
+
+    - name: 🚀 上传到 Release
+      uses: softprops/action-gh-release@v2.2.1
+      with:
+        tag_name: OpenWrt-${{ env.VERSION }}-x86-64-RELEASE
+        body_path: ${{ github.workspace }}/router-info.md
+        files: |
+          imagebuilder/bin/targets/x86/64/*squashfs-combined-efi.img.gz
+        token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
