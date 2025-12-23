@@ -90,6 +90,5 @@ sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='$NEW_DESCRIPTION'/" "
 cat >> /etc/opkg/customfeeds.conf <<EOF
 src/gz openwrt_kiddin9 https://dl.openwrt.ai/packages-24.10/x86_64/kiddin9/
 EOF
-# === 自定义软件源设置结束 ===
 
 exit 0
