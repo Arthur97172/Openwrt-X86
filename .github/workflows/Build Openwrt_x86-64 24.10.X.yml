@@ -107,15 +107,6 @@ jobs:
       run: |
         bash ./build_config.sh
 
-    - name: 🔍 整理固件文件
-      run: |
-        cd imagebuilder/bin/targets/x86/64/
-        for f in *squashfs-combined-efi.img.gz; do
-          if [ -f "$f" ]; then
-            mv "$f" "${{ env.VERSION }}-$f"
-          fi
-        done
-
     - name: 📜 生成发布说明
       run: |
         cat > ${{ github.workspace }}/router-info.md <<EOF
