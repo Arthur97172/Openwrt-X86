@@ -3,18 +3,10 @@ name: 📦 Build Openwrt_x86-64 24.10.X
 on:
   workflow_dispatch:
     inputs:
-      build_version:
-        description: "请选择构建版本 (latest 为官网最新)"
-        required: true
-        default: 'latest'
-        type: choice
-        options:
-          - 'latest'
-          - '20251205'
       luci_version:
         description: "选择luci版本"
         required: true
-        default: "24.10.4"
+        default: "24.10.5"
         type: choice
         options:
           - '24.10.0'
@@ -22,6 +14,7 @@ on:
           - '24.10.2'
           - '24.10.3'
           - '24.10.4' 
+          - '24.10.5'           
       ipaddr:
         description: '请输入管理IP'
         required: true
@@ -79,15 +72,10 @@ jobs:
 
     - name: ⏬ 下载 ImageBuilder
       run: |
-        BUILD_VER="${{ inputs.build_version }}"
-        if [ "$BUILD_VER" = "latest" ]; then
-          URL="https://fw0.koolcenter.com/iStoreOS/ib/x86_64/istoreos-imagebuilder-x86-64.Linux-x86_64.tar.zst"
-        else
-          URL="https://github.com/${{ github.repository }}/releases/download/iStoreOS-Imagebuilder/${BUILD_VER}-istoreos-imagebuilder-x86-64.Linux-x86_64.tar.zst"
-        fi
+        URL="https://downloads.openwrt.org/releases/${{ env.VERSION }}/targets/x86/64/openwrt-imagebuilder-${{ env.VERSION }}-x86-64.Linux-x86_64.tar.zst
         curl -Lf -o imagebuilder.tar.zst "$URL"
         tar --use-compress-program=unzstd -xvf imagebuilder.tar.zst
-        mv istoreos-imagebuilder-* imagebuilder
+        mv openwrt-imagebuilder-* imagebuilder
         
     
     - name: ⏬ 复制必备文件
@@ -102,7 +90,7 @@ jobs:
         echo "打印action目录结构"
         tree -L 1
 
-    - name: 🧱 构建iStoreOS固件
+    - name: 🧱 构建OpenWrt固件
       working-directory: ./imagebuilder
       run: |
         echo "打印imagebuilder目录结构"
@@ -137,7 +125,7 @@ jobs:
           cat > ${{ github.workspace }}/router-info.md <<EOF
           ## 📡 路由器后台信息
           
-          📌 版本： iStoreOS-x86-64-${{ github.event.inputs.luci_version }}
+          📌 版本： OpenWrt-x86-64-${{ github.event.inputs.luci_version }}
           
           🧩 集成： 包含了基础系统组件、驱动、网络工具、容器支持、LuCI界面及插件等
           
@@ -159,7 +147,7 @@ jobs:
     - name: 🚀 上传到 Release
       uses: softprops/action-gh-release@v2.2.1
       with:
-        tag_name: iStoreOS-${{ github.event.inputs.luci_version }}-x86-64-RELEASE
+        tag_name: OpenWrt-${{ github.event.inputs.luci_version }}-x86-64-RELEASE
         # 3. 使用 body_path 读取刚才生成的文件内容
         body_path: ${{ github.workspace }}/router-info.md
         files: |
