@@ -128,21 +128,7 @@ uci set network.lan.force_link='1'
 uci commit network
 echo "[DONE] multi nic router configured" >> "$LOGFILE"
 
-# --------------------------------------------------
-# 6. 写入版本描述
-# --------------------------------------------------
-sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='OpenWrt VERXXXX'/" \
-    /etc/openwrt_release
-
-# --------------------------------------------------
-# 7. 自定义软件源
-# --------------------------------------------------
-cat >> /etc/opkg/customfeeds.conf <<EOF
-src/gz openwrt_kiddin9 https://dl.openwrt.ai/packages-24.10/x86_64/kiddin9/
-EOF
-
 echo "=== 99-custom.sh end ===" >> "$LOGFILE"
-exit 0
 
 # 设置所有网口可连接 SSH
 uci set dropbear.@dropbear[0].Interface=''
