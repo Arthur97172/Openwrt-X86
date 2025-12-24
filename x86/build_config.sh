@@ -109,6 +109,17 @@ PACKAGES="$PACKAGES kmod-drm-i915"
 PACKAGES="$PACKAGES nano"
 PACKAGES="$PACKAGES -libustream-mbedtls"
 
+#Arthur添加
+PACKAGES="$PACKAGES alsa-utils"
+PACKAGES="$PACKAGES busybox"
+PACKAGES="$PACKAGES ipv6helper"
+PACKAGES="$PACKAGES kmod-amazon-ena"
+PACKAGES="$PACKAGES kmod-amd-xgbe"
+PACKAGES="$PACKAGES kmod-bnx2"
+PACKAGES="$PACKAGES kmod-tg3"
+PACKAGES="$PACKAGES kmod-usb-net-rtl8152-vendor"
+PACKAGES="$PACKAGES kmod-wwan"
+
 # LuCI 中文本地化与插件
 PACKAGES="$PACKAGES luci-i18n-package-manager-zh-cn"
 #PACKAGES="$PACKAGES luci-i18n-argon-zh-cn"
