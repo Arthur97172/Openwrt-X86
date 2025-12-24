@@ -1,26 +1,41 @@
 #!/bin/sh
-# Openwrt 首次运行时
-LOGFILE="/tmp/uci-defaults-log.txt"
-echo "Starting 99-custom.sh at $(date)" >>$LOGFILE
-# 设置默认防火墙规则，方便虚拟机首次访问 WebUI
-uci set firewall.@zone[1].input='ACCEPT'
+# ==================================================
+# OpenWrt First Boot - Production Network Init
+# ==================================================
 
-# 设置主机名
+LOGFILE="/tmp/uci-defaults-log.txt"
+echo "=== 99-custom.sh start: $(date) ===" >> "$LOGFILE"
+
+# --------------------------------------------------
+# 0. 阻止 board.d / init.d/network 覆盖（关键）
+# --------------------------------------------------
+touch /etc/config/.network_done
+
+# --------------------------------------------------
+# 1. 基础系统设置
+# --------------------------------------------------
 uci set system.@system[0].hostname='OpenWrt'
 uci set system.@system[0].timezone='CST-8'
 uci set system.@system[0].zonename='Asia/Shanghai'
-
-# 设置默认语言为简体中文
-uci set luci.main.lang='zh_cn'
-# 保存设置
 uci commit system
+
+uci set luci.main.lang='zh_cn'
 uci commit luci
 
-# 设置所有网口可访问网页终端
-uci delete ttyd.@ttyd[0].interface
+# 放开防火墙 LAN 输入，方便首次访问
+uci set firewall.@zone[1].input='ACCEPT'
+uci commit firewall
+
+# ttyd 允许所有接口访问
+uci -q delete ttyd.@ttyd[0].interface
+uci commit ttyd
+
+# SSH 允许所有接口
+uci set dropbear.@dropbear[0].Interface=''
+uci commit dropbear
 
 # --------------------------------------------------
-# 1. 枚举“真实可用网口”（DSA / x86 / ARM 通用）
+# 2. 枚举真实物理网口（通用 / 稳定）
 # --------------------------------------------------
 ifnames=""
 count=0
@@ -32,32 +47,29 @@ for iface in /sys/class/net/*; do
         lo|br-*|docker*|veth*|wlan*|phy*) continue ;;
     esac
 
-    # 只要是能出现在 netifd 里的接口，都算
     count=$((count + 1))
     ifnames="$ifnames $name"
 done
 
 ifnames="$(echo "$ifnames" | awk '{$1=$1};1')"
-
 echo "[INFO] detected interfaces: $ifnames (count=$count)" >> "$LOGFILE"
 
 # --------------------------------------------------
-# 2. 清理可能存在的旧 WAN / LAN 干扰
+# 3. 清理所有旧网络配置（防止污染）
 # --------------------------------------------------
+uci -q delete network.lan
 uci -q delete network.wan
 uci -q delete network.wan6
+uci -q delete network.mgmt
+uci -q delete network.br_lan
 
 # --------------------------------------------------
-# 3. 单网口模式：管理口 DHCP（不会被回退）
+# 4. 单网口：管理口 DHCP（不会被回退）
 # --------------------------------------------------
 if [ "$count" -eq 1 ]; then
     mgmt_if="$(echo "$ifnames" | awk '{print $1}')"
 
-    echo "[MODE] single interface -> mgmt DHCP on $mgmt_if" >> "$LOGFILE"
-
-    # 不再使用 lan 这个“高风险名称”
-    uci -q delete network.lan
-    uci rename network.@interface[0]='mgmt' 2>/dev/null
+    echo "[MODE] SINGLE NIC -> DHCP on $mgmt_if" >> "$LOGFILE"
 
     uci set network.mgmt=interface
     uci set network.mgmt.device="$mgmt_if"
@@ -65,16 +77,17 @@ if [ "$count" -eq 1 ]; then
     uci set network.mgmt.force_link='1'
 
     uci commit network
+    echo "[DONE] single nic dhcp configured" >> "$LOGFILE"
     exit 0
 fi
 
 # --------------------------------------------------
-# 4. 多网口模式：WAN + LAN
+# 5. 多网口：WAN + LAN（路由模式）
 # --------------------------------------------------
 wan_if="$(echo "$ifnames" | awk '{print $1}')"
 lan_ifs="$(echo "$ifnames" | cut -d ' ' -f2-)"
 
-echo "[MODE] multi interface -> WAN=$wan_if LAN=$lan_ifs" >> "$LOGFILE"
+echo "[MODE] MULTI NIC -> WAN=$wan_if LAN=$lan_ifs" >> "$LOGFILE"
 
 # WAN
 uci set network.wan=interface
@@ -86,15 +99,6 @@ uci set network.wan6.device="$wan_if"
 uci set network.wan6.proto='dhcpv6'
 
 # LAN bridge
-uci set network.lan=interface
-uci set network.lan.device='br-lan'
-uci set network.lan.proto='static'
-uci set network.lan.ipaddr='__IPADDR__'
-uci set network.lan.netmask='255.255.255.0'
-uci set network.lan.force_link='1'
-
-# br-lan device
-uci -q delete network.br_lan
 uci set network.br_lan=device
 uci set network.br_lan.name='br-lan'
 uci set network.br_lan.type='bridge'
@@ -103,8 +107,32 @@ for p in $lan_ifs; do
     uci add_list network.br_lan.ports="$p"
 done
 
+uci set network.lan=interface
+uci set network.lan.device='br-lan'
+uci set network.lan.proto='static'
+uci set network.lan.ipaddr='__IPADDR__'
+uci set network.lan.netmask='255.255.255.0'
+uci set network.lan.force_link='1'
+
 uci commit network
-echo "[DONE] network init completed" >> "$LOGFILE"
+echo "[DONE] multi nic router configured" >> "$LOGFILE"
+
+# --------------------------------------------------
+# 6. 写入版本描述
+# --------------------------------------------------
+sed -i "s/DISTRIB_DESCRIPTION='[^']*'/DISTRIB_DESCRIPTION='OpenWrt VERXXXX'/" \
+    /etc/openwrt_release
+
+# --------------------------------------------------
+# 7. 自定义软件源
+# --------------------------------------------------
+cat >> /etc/opkg/customfeeds.conf <<EOF
+src/gz openwrt_kiddin9 https://dl.openwrt.ai/packages-24.10/x86_64/kiddin9/
+EOF
+
+echo "=== 99-custom.sh end ===" >> "$LOGFILE"
+exit 0
+
 # 设置所有网口可连接 SSH
 uci set dropbear.@dropbear[0].Interface=''
 uci commit
