@@ -56,7 +56,7 @@ jobs:
         CONFIG_PATH="./files/uci-defaults/99-custom.sh"
         sed -i "s/版本号/${{ env.VERSION }}/g" "$CONFIG_PATH"
         [ -f "./files/etc/banner" ] && sed -i "s/版本号/${{ env.VERSION }}/g" "./files/etc/banner"
-        sed -i "s/192.168.5.1/${{ inputs.ipaddr }}/g" "$CONFIG_PATH"
+        sed -i "s/__IPADDR__/${{ inputs.ipaddr }}/g" "$CONFIG_PATH"
         sed -i "s/VERXXXX/${{ env.VERSION }}/g" "$CONFIG_PATH"
 
     - name: ⏬ 下载 ImageBuilder
