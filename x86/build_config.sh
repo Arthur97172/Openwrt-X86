@@ -141,6 +141,9 @@ PACKAGES="$PACKAGES luci-i18n-upnp-zh-cn"
 #PACKAGES="$PACKAGES luci-app-filetransfer"
 PACKAGES="$PACKAGES luci-app-ttyd"
 #PACKAGES="$PACKAGES luci-app-cifs-mount"
+PACKAGES="$PACKAGES luci-app-argon-config"
+PACKAGES="$PACKAGES luci-theme-argon"
+PACKAGES="$PACKAGES luci-app-passwall"
 
 # SFTP 支持
 #PACKAGES="$PACKAGES openssh-sftp-server"
