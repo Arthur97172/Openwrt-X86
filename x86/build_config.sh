@@ -125,8 +125,8 @@ PACKAGES="$PACKAGES kmod-phy-realtek"
 
 # LuCI 中文本地化与插件
 PACKAGES="$PACKAGES luci-i18n-package-manager-zh-cn"
-#PACKAGES="$PACKAGES luci-i18n-argon-zh-cn"
-#PACKAGES="$PACKAGES luci-i18n-argon-config-zh-cn"
+PACKAGES="$PACKAGES luci-app-argon-config"
+PACKAGES="$PACKAGES luci-theme-argon"
 #PACKAGES="$PACKAGES luci-i18n-filetransfer-zh-cn"
 #PACKAGES="$PACKAGES luci-i18n-quickstart-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-base-zh-cn"
