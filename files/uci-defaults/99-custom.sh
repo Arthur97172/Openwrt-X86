@@ -57,6 +57,8 @@ echo "[INFO] detected interfaces: $ifnames (count=$count)" >> "$LOGFILE"
 # --------------------------------------------------
 # 3. 清理所有旧网络配置（防止污染）
 # --------------------------------------------------
+rm -f /etc/config/network
+
 uci -q delete network.lan
 uci -q delete network.wan
 uci -q delete network.wan6
