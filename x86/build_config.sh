@@ -171,8 +171,6 @@ fi
 echo "开始构建......打印所有包名===="
 echo "$PACKAGES"
 
-# 🔥🔥🔥 关键：禁止 network 被打包进固件
-rm -f files/etc/config/network
 
 # 开始构建
 make image PROFILE=generic PACKAGES="$PACKAGES" FILES="files" ROOTFS_PARTSIZE=2048
