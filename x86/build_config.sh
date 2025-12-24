@@ -119,7 +119,7 @@ PACKAGES="$PACKAGES luci-i18n-firewall-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-ttyd-zh-cn"
 #PACKAGES="$PACKAGES luci-i18n-cifs-mount-zh-cn"
 #PACKAGES="$PACKAGES luci-i18n-unishare-zh-cn"
-PACKAGES="$PACKAGES luci-i18n-dockerman-zh-cn"
+#PACKAGES="$PACKAGES luci-i18n-dockerman-zh-cn"
 
 # LuCI 主题与功能
 #PACKAGES="$PACKAGES luci-theme-argon"
