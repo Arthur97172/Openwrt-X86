@@ -5,7 +5,7 @@
 # 广告拦截adghome
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-adguardhome"
 # 代理相关
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-passwall luci-i18n-passwall-zh-cn"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-passwall luci-i18n-passwall-zh-cn"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-openclash"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-homeproxy-zh-cn"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-ssr-plus"
@@ -26,8 +26,8 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-partexp-zh-cn"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-advancedplus-zh-cn"
 CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-argon"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-design"
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config"
-CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-argon-config-zh-cn"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-argon-config"
+#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-argon-config-zh-cn"
 
 # 网络测速 by sirpdboy 
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-netspeedtest"
