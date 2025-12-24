@@ -19,64 +19,92 @@ uci commit luci
 # 设置所有网口可访问网页终端
 uci delete ttyd.@ttyd[0].interface
 
-# 计算网卡数量
-count=0
+# --------------------------------------------------
+# 1. 枚举“真实可用网口”（DSA / x86 / ARM 通用）
+# --------------------------------------------------
 ifnames=""
-for iface in /sys/class/net/*; do
-    iface_name=$(basename "$iface")
-    # 检查是否为物理网卡（排除回环设备和无线设备）
-    if [ -e "$iface/device" ] && echo "$iface_name" | grep -Eq '^eth|^en'; then
-        count=$((count + 1))
-        ifnames="$ifnames $iface_name"
-    fi
-done
-# 删除多余空格
-ifnames=$(echo "$ifnames" | awk '{$1=$1};1')
+count=0
 
-# 网络设置
+for iface in /sys/class/net/*; do
+    name="$(basename "$iface")"
+
+    case "$name" in
+        lo|br-*|docker*|veth*|wlan*|phy*) continue ;;
+    esac
+
+    # 只要是能出现在 netifd 里的接口，都算
+    count=$((count + 1))
+    ifnames="$ifnames $name"
+done
+
+ifnames="$(echo "$ifnames" | awk '{$1=$1};1')"
+
+echo "[INFO] detected interfaces: $ifnames (count=$count)" >> "$LOGFILE"
+
+# --------------------------------------------------
+# 2. 清理可能存在的旧 WAN / LAN 干扰
+# --------------------------------------------------
+uci -q delete network.wan
+uci -q delete network.wan6
+
+# --------------------------------------------------
+# 3. 单网口模式：管理口 DHCP（不会被回退）
+# --------------------------------------------------
 if [ "$count" -eq 1 ]; then
-    # 单网口设备 类似于NAS模式 动态获取ip模式 具体ip地址取决于上一级路由器给它分配的ip 也方便后续你使用web页面设置旁路由
-    # 单网口设备 不支持修改ip 不要在此处修改ip 单网口采用dhcp模式 删除默认的192.168.1.1
-    uci set network.lan.proto='dhcp'
-    uci delete network.lan.ipaddr
-    uci delete network.lan.netmask
-    uci delete network.lan.gateway     
-    uci delete network.lan.dns 
+    mgmt_if="$(echo "$ifnames" | awk '{print $1}')"
+
+    echo "[MODE] single interface -> mgmt DHCP on $mgmt_if" >> "$LOGFILE"
+
+    # 不再使用 lan 这个“高风险名称”
+    uci -q delete network.lan
+    uci rename network.@interface[0]='mgmt' 2>/dev/null
+
+    uci set network.mgmt=interface
+    uci set network.mgmt.device="$mgmt_if"
+    uci set network.mgmt.proto='dhcp'
+    uci set network.mgmt.force_link='1'
+
     uci commit network
-elif [ "$count" -gt 1 ]; then
-    # 提取第一个接口作为WAN
-    wan_ifname=$(echo "$ifnames" | awk '{print $1}')
-    # 剩余接口保留给LAN
-    lan_ifnames=$(echo "$ifnames" | cut -d ' ' -f2-)
-    # 设置WAN接口基础配置
-    uci set network.wan=interface
-    # 提取第一个接口作为WAN
-    uci set network.wan.device="$wan_ifname"
-    # WAN接口默认DHCP
-    uci set network.wan.proto='dhcp'
-    # 设置WAN6绑定网口eth0
-    uci set network.wan6=interface
-    uci set network.wan6.device="$wan_ifname"
-    # 更新LAN接口成员
-    # 查找对应设备的section名称
-    section=$(uci show network | awk -F '[.=]' '/\.@?device\[\d+\]\.name=.br-lan.$/ {print $2; exit}')
-    if [ -z "$section" ]; then
-        echo "error：cannot find device 'br-lan'." >>$LOGFILE
-    else
-        # 删除原来的ports列表
-        uci -q delete "network.$section.ports"
-        # 添加新的ports列表
-        for port in $lan_ifnames; do
-            uci add_list "network.$section.ports"="$port"
-        done
-        echo "ports of device 'br-lan' are update." >>$LOGFILE
-    fi
-    # LAN口设置静态IP
-    uci set network.lan.proto='static'
-    # 多网口设备 支持修改为别的ip地址,别的地址应该是网关地址，形如192.168.xx.1 项目说明里都强调过。
-    uci set network.lan.ipaddr='192.168.5.1'
-    uci set network.lan.netmask='255.255.255.0'
+    exit 0
 fi
+
+# --------------------------------------------------
+# 4. 多网口模式：WAN + LAN
+# --------------------------------------------------
+wan_if="$(echo "$ifnames" | awk '{print $1}')"
+lan_ifs="$(echo "$ifnames" | cut -d ' ' -f2-)"
+
+echo "[MODE] multi interface -> WAN=$wan_if LAN=$lan_ifs" >> "$LOGFILE"
+
+# WAN
+uci set network.wan=interface
+uci set network.wan.device="$wan_if"
+uci set network.wan.proto='dhcp'
+
+uci set network.wan6=interface
+uci set network.wan6.device="$wan_if"
+uci set network.wan6.proto='dhcpv6'
+
+# LAN bridge
+uci set network.lan=interface
+uci set network.lan.device='br-lan'
+uci set network.lan.proto='static'
+uci set network.lan.ipaddr='192.168.5.1'
+uci set network.lan.netmask='255.255.255.0'
+uci set network.lan.force_link='1'
+
+# br-lan device
+uci -q delete network.br_lan
+uci set network.br_lan=device
+uci set network.br_lan.name='br-lan'
+uci set network.br_lan.type='bridge'
+
+for p in $lan_ifs; do
+    uci add_list network.br_lan.ports="$p"
+done
+
+uci commit network
+echo "[DONE] network init completed" >> "$LOGFILE"
 # 设置所有网口可连接 SSH
 uci set dropbear.@dropbear[0].Interface=''
 uci commit
