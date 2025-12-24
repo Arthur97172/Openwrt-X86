@@ -58,6 +58,7 @@ echo "[INFO] detected interfaces: $ifnames (count=$count)" >> "$LOGFILE"
 # 3. 清理所有旧网络配置（防止污染）
 # --------------------------------------------------
 rm -f /etc/config/network
+touch /etc/config/.network_done
 
 uci -q delete network.lan
 uci -q delete network.wan
@@ -82,7 +83,6 @@ if [ "$count" -eq 1 ]; then
     uci set network.mgmt=interface
     uci set network.mgmt.device="$mgmt_if"
     uci set network.mgmt.proto='dhcp'
-    uci set network.mgmt.force_link='1'
 
     uci commit network
     echo "[DONE] single nic DHCP applied" >> "$LOGFILE"
