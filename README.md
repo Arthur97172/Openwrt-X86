@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./files/screenshot/001.png" style="max-width: 100%; height: auto;" />
 
-  <h1>基于ImmortalWrt Imagebuilder X86-64</h1>
+  <h1>基于OpenWrt Imagebuilder X86-64</h1>
 
   <img src="https://img.shields.io/github/downloads/Arthur97172/ImmortalWrt-X86/total.svg?style=for-the-badge&color=32C955"/>
   <img src="https://img.shields.io/github/stars/Arthur97172/ImmortalWrt-X86.svg?style=for-the-badge&color=orange"/>
