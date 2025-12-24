@@ -106,6 +106,7 @@ PACKAGES="$PACKAGES kmod-forcedeth"
 PACKAGES="$PACKAGES kmod-fs-vfat"
 PACKAGES="$PACKAGES kmod-tg3"
 PACKAGES="$PACKAGES kmod-drm-i915"
+PACKAGES="$PACKAGES nano"
 PACKAGES="$PACKAGES -libustream-mbedtls"
 
 # LuCI 中文本地化与插件
