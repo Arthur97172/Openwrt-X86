@@ -33,8 +33,6 @@
 
 ## 🎉 Thanks [![](https://img.shields.io/badge/-Thanks-FFFFFF.svg)](#-Thanks-)
 - [Openwrt](https://github.com/Openwrt)
-- [sirpdboy](https://github.com/sirpdboy)
-- [wukongdaily](https://github.com/wukongdaily)
 
 
 ## 🙏 免责声明 [![](https://img.shields.io/badge/-免责声明-FFFFFF.svg)](#-免责声明-)
