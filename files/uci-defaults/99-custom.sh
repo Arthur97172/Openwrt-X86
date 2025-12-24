@@ -89,7 +89,7 @@ uci set network.wan6.proto='dhcpv6'
 uci set network.lan=interface
 uci set network.lan.device='br-lan'
 uci set network.lan.proto='static'
-uci set network.lan.ipaddr='192.168.5.1'
+uci set network.lan.ipaddr='__IPADDR__'
 uci set network.lan.netmask='255.255.255.0'
 uci set network.lan.force_link='1'
 
