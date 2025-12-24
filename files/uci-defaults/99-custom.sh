@@ -68,27 +68,30 @@ uci -q delete network.br_lan
 
 # --------------------------------------------------
 # --------------------------------------------------
-# 4. 单网口：管理口 DHCP（最终正确版）
-# --------------------------------------------------
 if [ "$count" -eq 1 ]; then
-    mgmt_if="$(echo "$ifnames" | awk '{print $1}')"
+    lan_if="$(echo "$ifnames" | awk '{print $1}')"
 
-    echo "[MODE] SINGLE NIC -> DHCP on $mgmt_if" >> "$LOGFILE"
+    echo "[MODE] SINGLE NIC -> lan DHCP on $lan_if" >> "$LOGFILE"
 
-    # ★ 关键：彻底移除 lan（static 的根源）
-    uci -q delete network.lan
+    # 明确创建 / 覆盖 lan
+    uci set network.lan=interface
+    uci set network.lan.device="$lan_if"
+    uci set network.lan.proto='dhcp'
+
+    # 删除一切 static 遗留字段（非常关键）
+    uci -q delete network.lan.ipaddr
+    uci -q delete network.lan.netmask
+    uci -q delete network.lan.gateway
+    uci -q delete network.lan.dns
+    uci -q delete network.lan.force_link
+
+    # 确保不存在 bridge
     uci -q delete network.br_lan
 
-    # 创建唯一管理接口
-    uci set network.mgmt=interface
-    uci set network.mgmt.device="$mgmt_if"
-    uci set network.mgmt.proto='dhcp'
-
     uci commit network
-    echo "[DONE] single nic DHCP applied" >> "$LOGFILE"
+    echo "[DONE] single nic DHCP lan applied" >> "$LOGFILE"
     exit 0
 fi
-
 # --------------------------------------------------
 # 5. 多网口：WAN + LAN（路由模式）
 # --------------------------------------------------
