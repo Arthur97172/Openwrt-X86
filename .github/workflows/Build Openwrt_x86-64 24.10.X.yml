@@ -116,8 +116,10 @@ jobs:
         cat > ${{ github.workspace }}/router-info.md <<EOF
         ## 📡 路由器后台信息
         📌 版本： OpenWrt-x86-64-${{ env.VERSION }}
+        👤 用户名： root
+        🔑 密码： 无
         🌐 初始IP： ${{ inputs.ipaddr }}
-        📜 Docker 状态: ${{ inputs.include_docker == 'yes' && '已集成' || '未集成' }}
+        📜 Docker状态： ${{ inputs.include_docker == 'yes' && '已集成' || '未集成' }}
         EOF
 
     - name: 🚀 上传到 Release
