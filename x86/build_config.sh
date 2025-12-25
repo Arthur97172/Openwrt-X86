@@ -127,6 +127,7 @@ PACKAGES="$PACKAGES iperf3"
 PACKAGES="$PACKAGES ethtool"
 PACKAGES="$PACKAGES kmod-nft-tproxy"
 PACKAGES="$PACKAGES kmod-nft-socket"
+PACKAGES="$PACKAGES shadowsocksr-libev-ssr-redir"
 PACKAGES="$PACKAGES bash"
 
 # LuCI 中文本地化与插件
