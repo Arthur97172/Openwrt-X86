@@ -19,7 +19,15 @@ on:
         description: '请输入管理IP'
         required: true
         default: '192.168.5.1'
-
+      include_docker:
+        description: "是否编译 Docker 插件"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+          - 'yes'
+          - 'no'
+          
 env:
   VERSION: ${{ inputs.luci_version }}
 
@@ -109,6 +117,7 @@ jobs:
         ## 📡 路由器后台信息
         📌 版本： OpenWrt-x86-64-${{ env.VERSION }}
         🌐 初始IP： ${{ inputs.ipaddr }}
+        📜 Docker 状态: ${{ inputs.include_docker == 'yes' && '已集成' || '未集成' }}
         EOF
 
     - name: 🚀 上传到 Release
