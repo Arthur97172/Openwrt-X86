@@ -18,7 +18,7 @@
   </div>
   
 ## 🤔 项目介绍 [![](https://img.shields.io/badge/-项目介绍-FFFFFF.svg)](#-项目介绍-)
-**目标是提供一个纯净的OpenlWrt。**
+**目标是提供一个纯净的OpenlWrt，并可选择是否包含Docker。**
 
 > [!TIP]
 > 😂此固件为 **非官方构建，不保证完全无BUG** ，请知悉😂
