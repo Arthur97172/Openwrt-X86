@@ -46,10 +46,10 @@ jobs:
         chmod +x x86/build_config.sh
         chmod +x shell/*.sh
 
-    - name: ⚙️ 安装依赖
+    - name: 🛠️ 安装依赖
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential libncurses5-dev zstd curl unzip tree
+        sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev zstd curl unzip tree qemu-utils
 
     - name: ⚙️ 设置IP、网关和版本号
       run: |
