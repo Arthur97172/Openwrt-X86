@@ -67,7 +67,7 @@ jobs:
         tar --use-compress-program=unzstd -xvf imagebuilder.tar.zst
         mv openwrt-imagebuilder-* imagebuilder
 
-    - name: ⏬ 复制必备文件
+    - name: 🔄 复制必备文件
       run: |
         cp x86/build_config.sh imagebuilder/
         cp x86/Makefile imagebuilder/
