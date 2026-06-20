@@ -45,7 +45,7 @@ jobs:
 
     - name: ⚙️ 设置可执行权限
       run: | 
-        chmod +x x86/build_config.sh
+        chmod +x x86/build24.sh
         chmod +x shell/*.sh
 
     - name: 🛠️ 安装依赖
@@ -71,7 +71,7 @@ jobs:
 
     - name: 🔄 复制必备文件
       run: |
-        cp x86/build_config.sh imagebuilder/
+        cp x86/build24.sh imagebuilder/
         cp x86/Makefile imagebuilder/
         cp x86/repositories.conf imagebuilder/
         cp shell/prepare-packages.sh imagebuilder/
@@ -79,7 +79,7 @@ jobs:
         mkdir -p imagebuilder/files/etc/uci-defaults
         cp files/uci-defaults/99-custom.sh imagebuilder/files/etc/uci-defaults/
         mkdir -p imagebuilder/files/etc/opkg
-        cp -r files/customfeeds/* imagebuilder/files/etc/opkg/ 2>/dev/null || true
+        cp -f files/customfeeds/24.customfeeds.conf imagebuilder/files/etc/opkg/customfeeds.conf 2>/dev/null || true
         # 验证信息
         ls -l imagebuilder/files/etc/opkg/customfeeds.conf && echo "已拷贝 customfeeds.conf"
 
@@ -111,7 +111,7 @@ jobs:
     - name: 🧱 构建OpenWrt固件
       working-directory: ./imagebuilder
       run: |
-        bash ./build_config.sh
+        bash ./build24.sh
 
     - name: 📜 生成发布说明
       run: |
