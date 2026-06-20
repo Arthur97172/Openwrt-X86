@@ -135,7 +135,7 @@ jobs:
     - name: 🚀 上传到 Release
       uses: softprops/action-gh-release@v2.2.1
       with:
-        tag_name: OpenWrt-${{ env.VERSION }}-x86-64-RELEASE-Docker ${{ env.DOCKER }}
+        tag_name: OpenWrt-${{ env.VERSION }}-x86-64-RELEASE-Docker-${{ env.DOCKER }}
         body_path: ${{ github.workspace }}/router-info.md
         files: |
           imagebuilder/bin/targets/x86/64/*squashfs-combined-efi.img.gz
