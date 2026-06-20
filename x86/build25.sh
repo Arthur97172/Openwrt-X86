@@ -8,16 +8,16 @@ INCLUDE_DOCKER=${INCLUDE_DOCKER:-"no"}
 echo "Rootfs Size: $ROOTFS_PARTSIZE MB"
 echo "Include Docker: $INCLUDE_DOCKER"
 
-# 加载第三方插件配置（使用 25.12 配置）
-source apk-custom-packages.sh
-echo "第三方软件包: $CUSTOM_PACKAGES"
-
 # 同步第三方仓库
 echo "$(date '+%Y-%m-%d %H:%M:%S') - 同步第三方软件仓库..."
 git clone --depth=1 https://github.com/wukongdaily/apk.git /tmp/store-repo
 
 mkdir -p extra-packages
 mkdir -p packages
+
+# 加载第三方插件配置（使用 25.12 配置）
+source apk-custom-packages.sh
+echo "第三方软件包: $CUSTOM_PACKAGES"
 
 # 复制 x86 的 .run 文件
 if [ -d "/tmp/store-repo/run/x86" ]; then
