@@ -7,57 +7,11 @@ INCLUDE_DOCKER=${INCLUDE_DOCKER:-"no"}
 echo "Rootfs Size: $ROOTFS_PARTSIZE MB"
 echo "Include Docker: $INCLUDE_DOCKER"
 
-# 检查第三方APK文件是否已准备好
-if [ -d "thirdparty-pkgs/flat" ]; then
-    APK_COUNT=$(find thirdparty-pkgs/flat -name '*.apk' | wc -l)
-    echo "✅ 检测到第三方APK文件，共 $APK_COUNT 个"
-
-    # 如果没有APKINDEX.tar.gz，则生成它
-    if [ ! -f "thirdparty-pkgs/flat/APKINDEX.tar.gz" ]; then
-        echo "正在生成本地APK索引..."
-
-        # 查找apk工具
-        APK_TOOL=""
-        for path in "./staging_dir/host/bin/apk" "./usr/bin/apk" "./apk" "$(which apk)" "/usr/bin/apk"; do
-            if [ -x "$path" ]; then
-                APK_TOOL="$path"
-                break
-            fi
-        done
-
-        if [ -n "$APK_TOOL" ]; then
-            echo "使用apk工具: $APK_TOOL"
-
-            # 生成APK索引
-            cd thirdparty-pkgs/flat
-            $APK_TOOL index -o APKINDEX.tar.gz *.apk 2>/dev/null
-
-            # 签名索引
-            # 查找abuild-sign
-            ABUILD_SIGN=""
-            for path in "./staging_dir/host/bin/abuild-sign" "./usr/bin/abuild-sign" "./abuild-sign" "$(which abuild-sign)" "/usr/bin/abuild-sign"; do
-                if [ -x "$path" ]; then
-                    ABUILD_SIGN="$path"
-                    break
-                fi
-            done
-
-            if [ -n "$ABUILD_SIGN" ]; then
-                $ABUILD_SIGN APKINDEX.tar.gz 2>/dev/null
-                echo "✅ APK索引签名完成"
-            fi
-
-            cd /home/runner/work/OpenWrt-X86/OpenWrt-X86/imagebuilder
-        else
-            echo "⚠️ 未找到apk工具，跳过索引生成"
-            echo "   APK索引将由make命令自动生成"
-        fi
-    else
-        echo "✅ APKINDEX.tar.gz 已存在"
-    fi
-else
-    echo "⚠️ 未检测到第三方APK文件"
-fi
+# ============================================
+# 步骤1: 加载第三方插件配置
+# ============================================
+CUSTOM_PACKAGES=""
+source apk-custom-packages.sh
 
 # 定义所需安装的包列表
 # [注意] libc / libgcc 由 base 系统提供，不单独列出
@@ -93,13 +47,97 @@ if [ "$INCLUDE_DOCKER" = "yes" ]; then
     PACKAGES="$PACKAGES docker docker-compose luci-app-dockerman luci-i18n-dockerman-zh-cn"
 fi
 
-# [合并第三方插件]
+# ============================================
+# 步骤2: 处理第三方插件
+# ============================================
+if [ -n "$CUSTOM_PACKAGES" ]; then
+    echo "检测到已选择第三方插件: $CUSTOM_PACKAGES"
+
+    # 复制第三方APK文件到本地目录
+    if [ ! -d "thirdparty-pkgs/flat" ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') - 复制第三方APK文件..."
+
+        # 检查仓库是否已克隆
+        if [ ! -d "/tmp/store-repo/apk/x86_64" ]; then
+            echo "克隆 OpenWrt-App 仓库..."
+            rm -rf /tmp/store-repo
+            git clone --depth=1 https://github.com/Arthur97172/OpenWrt-App.git /tmp/store-repo || {
+                echo "❌ git clone 失败！"
+                exit 1
+            }
+        fi
+
+        # 创建本地APK目录
+        mkdir -p thirdparty-pkgs/flat
+
+        # 复制 x86_64 下的所有 apk 文件到平铺目录
+        find /tmp/store-repo/apk/x86_64 -name '*.apk' -exec cp {} thirdparty-pkgs/flat/ \;
+
+        APK_COUNT=$(find thirdparty-pkgs/flat -name '*.apk' | wc -l)
+        echo "✅ 共复制 $APK_COUNT 个APK文件"
+
+        if [ "$APK_COUNT" -eq 0 ]; then
+            echo "❌ 没有找到APK文件，无法继续"
+            exit 1
+        fi
+    else
+        APK_COUNT=$(find thirdparty-pkgs/flat -name '*.apk' | wc -l)
+        echo "✅ 检测到已有 $APK_COUNT 个APK文件"
+    fi
+
+    # 生成APK索引
+    echo "正在生成本地APK索引..."
+    cd thirdparty-pkgs/flat
+
+    # 查找apk工具
+    APK_TOOL=""
+    for path in "./staging_dir/host/bin/apk" "/tmp/openwrt-imagebuilder-*/staging_dir/host/bin/apk" "./usr/bin/apk" "$(find /tmp -name 'apk' -type f 2>/dev/null | head -1)"; do
+        if [ -x "$path" ]; then
+            APK_TOOL="$path"
+            break
+        fi
+    done
+
+    if [ -n "$APK_TOOL" ]; then
+        echo "使用apk工具: $APK_TOOL"
+
+        # 生成APK索引
+        $APK_TOOL index -o APKINDEX.tar.gz *.apk 2>/dev/null
+
+        # 签名索引
+        ABUILD_SIGN="${APK_TOOL%/*}/abuild-sign"
+        if [ -x "$ABUILD_SIGN" ]; then
+            $ABUILD_SIGN APKINDEX.tar.gz 2>/dev/null
+            echo "✅ APK索引签名完成"
+        fi
+    else
+        echo "⚠️ 未找到apk工具，尝试使用make命令的自动索引功能"
+    fi
+
+    # 回到imagebuilder根目录
+    cd /home/runner/work/OpenWrt-X86/OpenWrt-X86/imagebuilder
+
+    # 添加本地源到repositories（如果还没有）
+    if ! grep -q "file:thirdparty-pkgs/flat" repositories 2>/dev/null; then
+        echo "file:thirdparty-pkgs/flat" >> repositories
+        echo "✅ 已添加本地源到 repositories"
+    fi
+
+else
+    echo "⚪️ 未选择第三方插件，跳过第三方仓库同步"
+fi
+
+# ============================================
+# 步骤3: 合并第三方插件到包列表
+# ============================================
 PACKAGES="$PACKAGES $CUSTOM_PACKAGES"
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') - 编译包列表:"
 echo "$PACKAGES"
 
-# 若构建 luci-app-openclash 则添加内核
+# ============================================
+# 步骤4: 特殊处理(openclash等需要额外文件)
+# ============================================
 if echo "$PACKAGES" | grep -q "luci-app-openclash"; then
     echo "✅ 已选择 luci-app-openclash，添加 openclash core"
     mkdir -p files/etc/openclash/core
@@ -112,7 +150,9 @@ else
     echo "⚪️ 未选择 luci-app-openclash"
 fi
 
-# 执行 make image
+# ============================================
+# 步骤5: 执行 make image
+# ============================================
 make image PROFILE=generic PACKAGES="$PACKAGES" FILES="files" ROOTFS_PARTSIZE="$ROOTFS_PARTSIZE"
 
 if [ $? -ne 0 ]; then
