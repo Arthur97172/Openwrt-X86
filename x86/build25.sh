@@ -67,53 +67,49 @@ if [ "$HAS_CUSTOM_PACKAGES" = "yes" ]; then
         exit 1
     }
 
-    # 检查仓库结构
-    echo "📁 仓库目录结构："
-    ls -la /tmp/store-repo/apk/x86_64/
-
-    # 递归查找所有 APK 文件
-    APK_FILES=$(find /tmp/store-repo/apk/x86_64 -name '*.apk' 2>/dev/null)
-    APK_COUNT=$(echo "$APK_FILES" | wc -l)
-    echo "✅ 找到 $APK_COUNT 个APK文件"
-
-    if [ "$APK_COUNT" -eq 0 ]; then
-        echo "❌ 没有找到APK文件"
-        ls -la /tmp/store-repo/apk/x86_64/*/
-        exit 1
-    fi
-
-    # 复制所有 APK 到 packages/ 目录
+    # 递归查找所有 APK 文件并复制到 packages/
     echo "复制 APK 到 packages/ 目录..."
     find /tmp/store-repo/apk/x86_64 -name '*.apk' -exec cp {} packages/ \;
 
-    echo "✅ packages/ 目录现有 $(find packages -name '*.apk' | wc -l) 个APK文件"
+    APK_COUNT=$(find packages -name '*.apk' | wc -l)
+    echo "✅ packages/ 目录现有 $APK_COUNT 个APK文件"
+
+    if [ "$APK_COUNT" -eq 0 ]; then
+        echo "❌ 没有找到APK文件"
+        exit 1
+    fi
 
     # 生成 APK 索引
     echo "生成 APK 本地索引..."
     cd packages
 
     # 查找 apk 工具
-    APK_TOOL=""
-    for path in "../staging_dir/host/bin/apk" "/usr/bin/apk"; do
-        if [ -x "$path" ]; then
-            APK_TOOL="$path"
-            break
-        fi
-    done
+    APK_TOOL="../staging_dir/host/bin/apk"
+    if [ ! -x "$APK_TOOL" ]; then
+        APK_TOOL=""
+    fi
 
     if [ -n "$APK_TOOL" ]; then
         echo "使用 apk 工具: $APK_TOOL"
-        # 生成索引，跳过签名检查
-        $APK_TOOL index --output APKINDEX.tar.gz --no-check-signature *.apk 2>&1 || {
-            echo "⚠️ APK 索引生成返回非零，尝试其他方法..."
-            # 尝试不带签名检查但加 --force 选项
-            $APK_TOOL index --output APKINDEX.tar.gz --no-check-signature --force *.apk 2>&1 || true
-        }
+        # 直接生成索引，不添加签名选项
+        $APK_TOOL index -o APKINDEX.tar.gz *.apk 2>&1
+        
+        if [ -f APKINDEX.tar.gz ]; then
+            echo "✅ APK 索引生成成功"
+        else
+            echo "⚠️ APK 索引生成失败，文件不存在"
+            ls -la
+        fi
     else
         echo "⚠️ 未找到 apk 工具"
     fi
 
     cd ..
+
+    # 也复制 APKINDEX.tar.gz 到 packages/（如果存在）
+    if [ -f packages/APKINDEX.tar.gz ]; then
+        echo "✅ APKINDEX.tar.gz 已存在"
+    fi
 
     echo "✅ APK 处理完成"
 else
