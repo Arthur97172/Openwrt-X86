@@ -7,29 +7,40 @@ INCLUDE_DOCKER=${INCLUDE_DOCKER:-"no"}
 echo "Rootfs Size: $ROOTFS_PARTSIZE MB"
 echo "Include Docker: $INCLUDE_DOCKER"
 
-# 同步第三方仓库
-echo "$(date '+%Y-%m-%d %H:%M:%S') - 同步第三方软件仓库..."
-git clone --depth=1 https://github.com/wukongdaily/apk.git /tmp/store-repo
-
 mkdir -p extra-packages
 mkdir -p packages
 
 # 加载第三方插件配置（使用 25.12 配置）
+# 必须在同步仓库之前 source，因为其内容决定是否需要 clone
+CUSTOM_PACKAGES=""
 source apk-custom-packages.sh
-echo "第三方软件包: $CUSTOM_PACKAGES"
 
-# 复制 x86 的 .run 文件
-if [ -d "/tmp/store-repo/run/x86" ]; then
-    cp -r /tmp/store-repo/run/x86/* extra-packages/
-    echo "✅ Run files copied:"
-    ls -lh extra-packages/*.run 2>/dev/null || echo "无 run 文件"
+# 只有当选择了第三方插件时才同步第三方仓库
+if [ -n "$CUSTOM_PACKAGES" ]; then
+    echo "检测到已选择第三方插件: $CUSTOM_PACKAGES"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - 同步第三方软件仓库..."
+    if [ -d "/tmp/store-repo" ]; then
+        echo "仓库已存在，更新中..."
+        git -C /tmp/store-repo pull --ff-only
+    else
+        git clone --depth=1 https://github.com/wukongdaily/apk.git /tmp/store-repo
+    fi
+
+    # 复制 x86 的 .run 文件
+    if [ -d "/tmp/store-repo/run/x86" ]; then
+        cp -r /tmp/store-repo/run/x86/* extra-packages/
+        echo "✅ Run files copied:"
+        ls -lh extra-packages/*.run 2>/dev/null || echo "无 run 文件"
+    else
+        echo "⚪️ 无 x86 专用 run 文件"
+    fi
+
+    # 解压并拷贝 apk/ipk
+    sh prepare-packages.sh
+    ls -lah packages/ | tail -5
 else
-    echo "⚪️ 无 x86 专用 run 文件"
+    echo "⚪️ 未选择第三方插件，跳过第三方仓库同步"
 fi
-
-# 解压并拷贝 apk/ipk
-sh prepare-packages.sh
-ls -lah packages/ | tail -5
 
 # 定义所需安装的包列表
 # [注意] libc / libgcc 由 base 系统提供，不单独列出
