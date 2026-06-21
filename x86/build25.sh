@@ -35,7 +35,7 @@ if [ -n "$CUSTOM_PACKAGES" ]; then
 
     # 检查 clone 结果
     if [ ! -d "/tmp/store-repo/apk/x86_64" ]; then
-        echo "❌ 仓库结构异常，run/x86 目录不存在"
+        echo "❌ 仓库结构异常，apk/x86_64 目录不存在"
         exit 1
     fi
 
