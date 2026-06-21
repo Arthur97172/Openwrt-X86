@@ -1,6 +1,10 @@
 #!/bin/bash
 # OpenWrt 25.12.x x86-64 构建脚本
 # 在 imagebuilder 目录下运行
+source shell/apk-custom-packages.sh
+echo "第三方apk软件包: $CUSTOM_PACKAGES"
+LOGFILE="/tmp/uci-defaults-log.txt"
+echo "Starting 99-custom.sh at $(date)" >> $LOGFILE
 
 ROOTFS_PARTSIZE=${ROOTFS_PARTSIZE:-"2048"}
 INCLUDE_DOCKER=${INCLUDE_DOCKER:-"no"}
