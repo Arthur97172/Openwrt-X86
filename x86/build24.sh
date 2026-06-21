@@ -29,7 +29,7 @@ else
   echo "📁 仓库目录结构："
   ls -la /tmp/store-run-repo/
 
-  # 拷贝 run/x86 下所有 run 文件和ipk文件 到 extra-packages 目录
+  # 拷贝 x86_64 下所有 ipk 文件到 extra-packages 目录
   mkdir -p extra-packages
   cp -r /tmp/store-run-repo/ipk/x86_64/* extra-packages/
 
