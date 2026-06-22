@@ -179,10 +179,10 @@ PACKAGES="$PACKAGES kmod-mt7996e"
 PACKAGES="$PACKAGES kmod-mtk-t7xx"
 
 # LuCI 中文本地化与插件
-#PACKAGES="$PACKAGES luci-i18n-package-manager-zh-cn"
+PACKAGES="$PACKAGES luci-i18n-package-manager-zh-cn"
 #PACKAGES="$PACKAGES luci-i18n-filetransfer-zh-cn"
 #PACKAGES="$PACKAGES luci-i18n-quickstart-zh-cn"
-PACKAGES="$PACKAGES luci-i18n-base-zh-cn"
+PACKAGES="$PACKAGES luci-base luci-i18n-base-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-firewall-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-ttyd-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-upnp-zh-cn"
