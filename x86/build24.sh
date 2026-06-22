@@ -142,7 +142,6 @@ PACKAGES="$PACKAGES iperf3"
 PACKAGES="$PACKAGES ethtool"
 PACKAGES="$PACKAGES kmod-nft-tproxy"
 PACKAGES="$PACKAGES kmod-nft-socket"
-PACKAGES="$PACKAGES shadowsocksr-libev-ssr-redir"
 PACKAGES="$PACKAGES bash"
 
 # 博通无线网卡核心驱动
