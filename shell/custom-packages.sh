@@ -23,9 +23,10 @@ CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-theme-argon luci-app-argon-config luci-i1
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-advancedplus"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-advancedplus-zh-cn"
 
-# 网络测速 by sirpdboy 
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-netspeedtest"
-#CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-netspeedtest-zh-cn"
+#Poweroffdevice
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-poweroffdevice"
+CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-poweroffdevice-zh-cn"
+
 # MosDNS
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-mosdns"
 #CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-i18n-mosdns-zh-cn"
