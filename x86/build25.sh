@@ -101,7 +101,29 @@ if [ "$THIRD_PARTY_OK" = "1" ]; then
     # 排除已知不可用的部分(目前为空,作为占位)
     # 要忽略某些 apk 文件,把文件名加到 SKIP_APKS,空格的 glob
     SKIP_APKS=""
+    # 删除旧版无 canonical 重命名的拷贝段,见下面"重命名 apk 为 canonical 名称"
+    # 块(用 apk 内部 metadata 的 name+version 重新生成文件名,避免 mkndx 后
+    # add 时 "package mentioned in index not found")。
 
+    APK_BIN="staging_dir/host/bin/apk"
+    APK_KEYS_DIR="keys"
+    APK_SIGN_KEY="$APK_KEYS_DIR/local-private-key.pem"
+    if [ ! -s "$APK_SIGN_KEY" ]; then
+        APK_SIGN_KEY="$APK_KEYS_DIR/build_key.apk.sec"
+    fi
+
+    # 在拷贝阶段把 apk 重命名为 canonical 名称 (与 apk 内部 metadata
+    # 里的 name/version 完全一致)。apk-tools 在 add 时按 "{name}-{version}.apk"
+    # 在 repo 目录里查找 apk 文件,如果实际文件叫
+    # "clashoo-2026.06.22.5b54b3a-r1-x86_64.apk" 但 adb 里记录的版本是
+    # "2026.06.22~5b54b3a-r1"(点被 tilde 替换,还多了 -x86_64 后缀),
+    # 就会抛出 "package mentioned in index not found"。
+    # 解决办法: `apk adbdump` 读出每个 apk 块 info 段里的 name+version
+    # (这是 apk 注册时的唯一身份),然后 cp 到 "packages/{name}-{version}.apk"。
+    echo "🔖 重命名 apk 为 canonical 名称(name-version.apk)..."
+    canoned=0
+    cached=0
+    skipped=0
     for f in thirdparty/*.apk; do
         [ -e "$f" ] || continue
         base=$(basename "$f")
@@ -113,18 +135,27 @@ if [ "$THIRD_PARTY_OK" = "1" ]; then
             echo "  ↷ 跳过: $base"
             continue
         fi
-        cp -n "$f" packages/ 2>/dev/null || cp "$f" packages/
+        # 读 canonical 信息
+        canon_name=$("$APK_BIN" adbdump "$f" 2>/dev/null \
+            | awk '/^  name:/ {name=$2} /^  version:/ {ver=$2; print name; print ver}' | head -2)
+        canon_pkg=$(echo "$canon_name" | head -1)
+        canon_ver=$(echo "$canon_name" | sed -n '2p')
+        if [ -z "$canon_pkg" ] || [ -z "$canon_ver" ]; then
+            echo "  ⚠️ 无法读 metadata(可能是损坏的 apk):$base — 跳过"
+            continue
+        fi
+        target="$canon_pkg-$canon_ver.apk"
+        if [ -f "packages/$target" ] && [ "packages/$target" -nt "$f" ]; then
+            cached=$((cached+1))
+            continue
+        fi
+        # 用 cp 而不是 mv:原文件在 thirdparty/ 留着供本地诊断
+        cp -f "$f" "packages/$target"
+        canoned=$((canoned+1))
     done
-
-    PKG_IN_POOL=$(ls packages/ | wc -l)
+    echo "📦 重命名 $canoned 新 apk,缓存 $cached 个,跳过 $skipped 个"
+    PKG_IN_POOL=$(ls packages/*.apk 2>/dev/null | wc -l)
     echo "✅ 第三方 APK 已合并到 packages/ (池中现共 $PKG_IN_POOL 个文件)"
-
-    APK_BIN="staging_dir/host/bin/apk"
-    APK_KEYS_DIR="keys"
-    APK_SIGN_KEY="$APK_KEYS_DIR/local-private-key.pem"
-    if [ ! -s "$APK_SIGN_KEY" ]; then
-        APK_SIGN_KEY="$APK_KEYS_DIR/build_key.apk.sec"
-    fi
 
     # 在 mkndx 之前预生成 EC key,与 IB Makefile 的 _check_keys 目标
     # (target/imagebuilder/files/Makefile line ~344) 用完全相同的方式。
