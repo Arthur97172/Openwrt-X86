@@ -83,10 +83,9 @@ if [ "$HAS_CUSTOM_PACKAGES" = "yes" ]; then
     fi
 
     # 把第三方 APK 物理放入 ImageBuilder 的 packages/ 目录。
-    # 25.12+ ImageBuilder 在执行 `make image` 前会检查 packages/packages.adb
-    # 是否缺失或过期,如果会自动重建:
-    #   (cd packages; apk mkndx --allow-untrusted --output packages.adb *.apk)
-    # 见 ImageBuilder 的 Makefile:213-215、232-236。所以这里无需手动跑 apk index。
+    # 关键: IB 自带的 `apk mkndx >(>|/dev/null) 2>/dev/null || true`
+    # 会默默吞掉索引构建错误,导致后面 make image 时查不到包。本
+    # 处显式重建索引并把 stderr 全部暴露,便于排查问题。
     echo "复制第三方 APK 到 imagebuilder/packages/ ..."
     mkdir -p packages
     # 用 cp -n 防覆盖已有的基础包(kernel/libc/base-files 等)
@@ -95,7 +94,35 @@ if [ "$HAS_CUSTOM_PACKAGES" = "yes" ]; then
 
     PKG_IN_POOL=$(ls packages/ | wc -l)
     echo "✅ 第三方 APK 已合并到 packages/ (池中现共 $PKG_IN_POOL 个文件)"
-    echo "✅ packages.adb 将在 make image 阶段由 ImageBuilder 自动重建"
+
+    APK_BIN="staging_dir/host/bin/apk"
+    if [ -x "$APK_BIN" ]; then
+        echo "🔧 显式重建 packages.adb 索引(不再依赖 IB 的静默自动重建)..."
+        if ! (cd packages && ../"$APK_BIN" mkndx --allow-untrusted --output packages.adb *.apk); then
+            echo "⚠️ mkndx 整体失败,逐个诊断损坏的 apk ..."
+            BAD=""
+            for f in packages/*.apk; do
+                if ! (cd packages && ../"$APK_BIN" mkndx --allow-untrusted --output packages.adb "$(basename "$f")"); then
+                    echo "  ✗ 损坏: $f"
+                    BAD="$BAD $f"
+                fi
+            done
+            if [ -n "$BAD" ]; then
+                echo "🚮 暂时移出损坏的 apk: $BAD"
+                mkdir -p packages/.bad
+                mv $BAD packages/.bad/
+                # 重新建索引,只看健康的 apk
+                (cd packages && ../"$APK_BIN" mkndx --allow-untrusted --output packages.adb *.apk) || {
+                    echo "❌ 即便移出损坏的 apk 后仍无法生成索引,放弃构建."
+                    exit 1
+                }
+                echo "✅ 已用剩余的健康 apk 重建索引(损坏 apk 的功能将不可用)"
+            fi
+        fi
+        echo "✅ packages.adb 已就绪"
+    else
+        echo "⚠️ 找不到 $APK_BIN,继续依赖 IB 自动重建(不推荐)"
+    fi
 else
     echo "⚪️ 无第三方插件，跳过下载"
 fi
