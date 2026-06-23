@@ -54,43 +54,67 @@ if [ "$INCLUDE_DOCKER" = "yes" ]; then
 fi
 
 # ============================================
-# 步骤2: 处理第三方插件（仅当存在时）
+# 步骤2: 处理第三方插件(最佳努力,失败不阻断构建)
 # ============================================
+THIRD_PARTY_OK=0
 if [ "$HAS_CUSTOM_PACKAGES" = "yes" ]; then
     echo "$(date '+%Y-%m-%d %H:%M:%S') - 开始处理第三方APK..."
 
-    # 克隆 OpenWrt-App 仓库
+    # 克隆 OpenWrt-App 仓库 (best-effort)
     echo "克隆 OpenWrt-App 仓库..."
     rm -rf /tmp/store-repo
-    git clone --depth=1 https://github.com/Arthur97172/OpenWrt-App.git /tmp/store-repo || {
-        echo "❌ git clone 失败！"
-        exit 1
-    }
+    if git clone --depth=1 https://github.com/Arthur97172/OpenWrt-App.git /tmp/store-repo 2>/tmp/git-clone.log; then
+        THIRD_PARTY_OK=1
+    else
+        echo "⚠️ git clone 失败(继续构建,不含第三方插件):"
+        sed 's/^/    /' /tmp/git-clone.log
+    fi
+fi
 
+if [ "$THIRD_PARTY_OK" = "1" ]; then
     # 创建临时目录存放第三方 APK
     mkdir -p thirdparty
 
-    # 复制第三方 APK 到临时目录（不覆盖 base 包）
+    # 复制第三方 APK 到临时目录(不覆盖 base 包)
     echo "复制第三方 APK 到 thirdparty/ 目录..."
-    find /tmp/store-repo/apk/x86_64 -name '*.apk' -exec cp {} thirdparty/ \;
-
-    APK_COUNT=$(find thirdparty -name '*.apk' | wc -l)
-    echo "✅ 第三方目录现有 $APK_COUNT 个APK文件"
-
-    if [ "$APK_COUNT" -eq 0 ]; then
-        echo "❌ 没有找到APK文件"
-        exit 1
+    if ! find /tmp/store-repo/apk/x86_64 -name '*.apk' -exec cp {} thirdparty/ \; 2>/dev/null; then
+        echo "⚠️ 未在仓库中找到 apk/x86_64/*.apk,跳过第三方"
+        THIRD_PARTY_OK=0
     fi
 
+    APK_COUNT=$(find thirdparty -name '*.apk' 2>/dev/null | wc -l)
+    echo "✅ 第三方目录现有 $APK_COUNT 个APK文件"
+    if [ "$APK_COUNT" -eq 0 ]; then
+        echo "⚪️ 未获取到任何第三方 apk,继续构建"
+        THIRD_PARTY_OK=0
+    fi
+fi
+
+if [ "$THIRD_PARTY_OK" = "1" ]; then
     # 把第三方 APK 物理放入 ImageBuilder 的 packages/ 目录。
     # 关键: IB 自带的 `apk mkndx >(>|/dev/null) 2>/dev/null || true`
     # 会默默吞掉索引构建错误,导致后面 make image 时查不到包。本
     # 处显式重建索引并把 stderr 全部暴露,便于排查问题。
     echo "复制第三方 APK 到 imagebuilder/packages/ ..."
     mkdir -p packages
-    # 用 cp -n 防覆盖已有的基础包(kernel/libc/base-files 等)
-    cp -n thirdparty/*.apk packages/ 2>/dev/null \
-        || cp thirdparty/*.apk packages/
+
+    # 排除已知不可用的部分(目前为空,作为占位)
+    # 要忽略某些 apk 文件,把文件名加到 SKIP_APKS,空格的 glob
+    SKIP_APKS=""
+
+    for f in thirdparty/*.apk; do
+        [ -e "$f" ] || continue
+        base=$(basename "$f")
+        skip=0
+        for s in $SKIP_APKS; do
+            case "$base" in $s) skip=1 ;; esac
+        done
+        if [ "$skip" = "1" ]; then
+            echo "  ↷ 跳过: $base"
+            continue
+        fi
+        cp -n "$f" packages/ 2>/dev/null || cp "$f" packages/
+    done
 
     PKG_IN_POOL=$(ls packages/ | wc -l)
     echo "✅ 第三方 APK 已合并到 packages/ (池中现共 $PKG_IN_POOL 个文件)"
@@ -111,10 +135,8 @@ if [ "$HAS_CUSTOM_PACKAGES" = "yes" ]; then
                 echo "🚮 暂时移出损坏的 apk: $BAD"
                 mkdir -p packages/.bad
                 mv $BAD packages/.bad/
-                # 重新建索引,只看健康的 apk
                 (cd packages && ../"$APK_BIN" mkndx --allow-untrusted --output packages.adb *.apk) || {
-                    echo "❌ 即便移出损坏的 apk 后仍无法生成索引,放弃构建."
-                    exit 1
+                    echo "⚠️ 即便移出损坏的 apk 后仍无法生成索引,继续依赖 IB 的自动重建"
                 }
                 echo "✅ 已用剩余的健康 apk 重建索引(损坏 apk 的功能将不可用)"
             fi
@@ -123,8 +145,6 @@ if [ "$HAS_CUSTOM_PACKAGES" = "yes" ]; then
     else
         echo "⚠️ 找不到 $APK_BIN,继续依赖 IB 自动重建(不推荐)"
     fi
-else
-    echo "⚪️ 无第三方插件，跳过下载"
 fi
 
 # ============================================
